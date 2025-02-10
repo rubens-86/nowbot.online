@@ -44,7 +44,6 @@ import { makeStyles } from "@material-ui/core/styles";
 import { AccountTree, AllInclusive, AttachFile, BlurCircular, Chat, DeviceHubOutlined, Schedule } from '@material-ui/icons';
 import usePlans from "../hooks/usePlans";
 import Typography from "@material-ui/core/Typography";
-import useVersion from "../hooks/useVersion";
 import { ShapeLine } from "@mui/icons-material";
 
 const useStyles = makeStyles((theme) => ({
@@ -140,7 +139,6 @@ const MainListItems = (props) => {
   const { user, handleLogout } = useContext(AuthContext);
   const [connectionWarning, setConnectionWarning] = useState(false);
   const [openCampaignSubmenu, setOpenCampaignSubmenu] = useState(false);
-  const [openFlowsSubmenu, setOpenFlowsSubmenu] = useState(false);
   const [showCampaigns, setShowCampaigns] = useState(false);
   const [showKanban, setShowKanban] = useState(false);
   const [showOpenAi, setShowOpenAi] = useState(false);
@@ -156,19 +154,11 @@ const MainListItems = (props) => {
   const [chats, dispatch] = useReducer(reducer, []);
   const { getPlanCompany } = usePlans();
   
-  const [version, setVersion] = useState(false);
-  
-  
-  const { getVersion } = useVersion();
+  const [openFlowsSubmenu, setOpenFlowsSubmenu] = useState(false);
 
   const socketManager = useContext(SocketContext);
 
   useEffect(() => {
-    async function fetchVersion() {
-      const _version = await getVersion();
-      setVersion(_version.version);
-    }
-    fetchVersion();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
  
@@ -396,7 +386,6 @@ const MainListItems = (props) => {
                     <ExpandMoreIcon />
                   )}
                 </ListItem>
-
                 <Collapse
                   style={{ paddingLeft: 15 }}
                   in={openCampaignSubmenu}
@@ -430,35 +419,34 @@ const MainListItems = (props) => {
                     </ListItem>
                   </List>
                 </Collapse>
-
                 {/* Flow builder */}
                 <ListItem
-                  button
-                  onClick={() => setOpenFlowsSubmenu((prev) => !prev)}
+                    button
+                    onClick={() => setOpenFlowsSubmenu((prev) => !prev)}
                 >
                   <ListItemIcon>
                     <AccountTree />
                   </ListItemIcon>
                   <ListItemText
-                    primary={i18n.t("mainDrawer.listItems.flows")}
+                      primary={i18n.t("mainDrawer.listItems.flows")}
                   />
                   {openCampaignSubmenu ? (
-                    <ExpandLessIcon />
+                      <ExpandLessIcon />
                   ) : (
-                    <ExpandMoreIcon />
+                      <ExpandMoreIcon />
                   )}
                 </ListItem>
 
                 <Collapse
-                  style={{ paddingLeft: 15 }}
-                  in={openFlowsSubmenu}
-                  timeout="auto"
-                  unmountOnExit
+                    style={{ paddingLeft: 15 }}
+                    in={openFlowsSubmenu}
+                    timeout="auto"
+                    unmountOnExit
                 >
                   <List component="div" disablePadding>
                     <ListItem
-                      onClick={() => history.push("/phrase-lists")}
-                      button
+                        onClick={() => history.push("/phrase-lists")}
+                        button
                     >
                       <ListItemIcon>
                         <EventAvailableIcon />
@@ -467,8 +455,8 @@ const MainListItems = (props) => {
                     </ListItem>
 
                     <ListItem
-                      onClick={() => history.push("/flowbuilders")}
-                      button
+                        onClick={() => history.push("/flowbuilders")}
+                        button
                     >
                       <ListItemIcon>
                         <ShapeLine />
@@ -479,7 +467,6 @@ const MainListItems = (props) => {
                 </Collapse>
               </>
             )}
-
 
             {user.super && (
               <ListItemLink
@@ -558,7 +545,7 @@ const MainListItems = (props) => {
               </Hidden> 
               */}
               <Typography style={{ fontSize: "12px", padding: "10px", textAlign: "right", fontWeight: "bold" }}>
-                {version}
+                8.0.1
               </Typography>
             </React.Fragment>
             }
@@ -566,8 +553,6 @@ const MainListItems = (props) => {
           </>
         )}
       />
-
-
     </div>
   );
 };

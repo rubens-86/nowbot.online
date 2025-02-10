@@ -86,6 +86,8 @@ const SignUp = () => {
 	const initialState = { name: "", email: "", phone: "", password: "", planId: "", };
 
 	const [user] = useState(initialState);
+	const [selectedCurrence, setSelectedCurrence] = useState('R$');
+
 	const dueDate = moment().add(3, "day").format();
 	const handleSignUp = async values => {
 		Object.assign(values, { recurrence: "MENSAL" });
@@ -105,10 +107,16 @@ const SignUp = () => {
 	const [plans, setPlans] = useState([]);
 	const { list: listPlans } = usePlans();
 
+	function setCurrency(){
+		const language = localStorage.getItem("i18nextLng");
+		setSelectedCurrence(language === "pt" ? "R$" : "USD");
+	}
+
 	useEffect(() => {
 		async function fetchData() {
 			const list = await listPlans();
 			setPlans(list);
+			setCurrency()
 		}
 		fetchData();
 	}, []);
@@ -220,7 +228,7 @@ const SignUp = () => {
 									>
 										{plans.map((plan, key) => (
 											<MenuItem key={key} value={plan.id}>
-												{plan.name} - {i18n.t("signup.plan.attendant")}: {plan.users} - {i18n.t("signup.plan.whatsapp")}: {plan.connections} - {i18n.t("signup.plan.queues")}: {plan.queues} - R$ {plan.value}
+												{plan.name} - {i18n.t("signup.plan.attendant")}: {plan.users} - {i18n.t("signup.plan.whatsapp")}: {plan.connections} - {i18n.t("signup.plan.queues")}: {plan.queues} - {selectedCurrence} {plan.value}
 											</MenuItem>
 										))}
 									</Field>
