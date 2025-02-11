@@ -72,9 +72,9 @@ export const updateFlowCampaign = async (
   res: Response
 ): Promise<Response> => {
   const { companyId } = req.user;
-  const { flowId, name, phrase, id, status } = req.body;
+  const { flowId, name, phrase, id, status, whatsappId } = req.body;
 
-  const flow = await UpdateFlowCampaignService({ companyId, name, flowId, phrase, id, status });
+  const flow = await UpdateFlowCampaignService({ companyId, name, flowId, phrase, id, status, whatsappId });
 
   return res.status(200).json(flow);
 };
