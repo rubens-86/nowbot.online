@@ -9,8 +9,7 @@ interface Request {
   flowId: number;
   phrase:string
   id: number
-  status: boolean;
-  whatsappId: number;
+  status: boolean
 }
 
 const UpdateFlowCampaignService = async ({
@@ -19,12 +18,11 @@ const UpdateFlowCampaignService = async ({
   flowId,
   phrase,
   id,
-  status,
-  whatsappId
+  status
 }: Request): Promise<String> => {
   try {
 
-    const flow = await FlowCampaignModel.update({ name, phrase, flowId, status, whatsappId }, {
+    const flow = await FlowCampaignModel.update({ name, phrase, flowId, status }, {
       where: {id: id}
     });
 
