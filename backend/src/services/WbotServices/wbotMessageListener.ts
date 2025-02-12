@@ -1084,8 +1084,6 @@ const verifyQueue = async (
   mediaSent?: Message | undefined
 ) => {
 
-  logger.info("Verificando Fila");
-
   const companyId = ticket.companyId;
 
   const { queues, greetingMessage, maxUseBotQueues, timeUseBotQueues } =
@@ -1784,8 +1782,6 @@ const flowbuilderIntegration = async (
 
   if (!msg.key.fromMe && ticket.status === "closed") {
 
-    logger.info("Mensagem do terceiro e ticket fechado");
-
     console.log("===== CHANGE =====");
     await ticket.update({ status: "pending" });
     await ticket.reload({
@@ -2153,8 +2149,6 @@ export const handleMessageIntegration = async (
   } else if(queueIntegration.type === "flowbuilder") {
     if (!isMenu) {
 
-      logger.info("Chegou no flowbuilder")
-
       await flowbuilderIntegration(
         msg,
         wbot,
@@ -2165,9 +2159,6 @@ export const handleMessageIntegration = async (
         isFirstMsg
       );
     } else {
-
-      logger.info(isNaN(parseInt(ticket.lastMessage)));
-      logger.info(ticket.status);
 
       if (
         !isNaN(parseInt(ticket.lastMessage)) &&
@@ -2205,8 +2196,6 @@ const flowBuilderQueue = async (
     }
   });
 
-  logger.info("Localizou flow: " + flow.id);
-
   const mountDataContact = {
     number: contact.number,
     name: contact.name,
@@ -2227,8 +2216,6 @@ const flowBuilderQueue = async (
   ) {
     return;
   }
-
-  logger.info("Enviando Webhook");
 
   await ActionsWebhookService(
     whatsapp.id,
@@ -2665,7 +2652,6 @@ const handleMessage = async (
       ticket.useIntegration &&
       ticket.queueId
     ) {
-      logger.info("Openai na fila");
       await handleOpenAi(msg, wbot, ticket, contact, mediaSent);
     }
 
@@ -2731,14 +2717,6 @@ const handleMessage = async (
       order: [["id", "DESC"]]
     });
 
-
-    logger.info("Enviada por mim: " + msg.key.fromMe);
-    logger.info("É grupo: " + ticket.isGroup);
-    logger.info("Tem fila no ticket: " + ticket.queue);
-    logger.info("O ticket já tem um usuário: " + ticket.user);
-    logger.info("Whatsapp integration ID: " + isNil(whatsapp.integrationId));
-    logger.info("Ticket está usando integração: " + ticket.useIntegration);
-
     // integração flowbuilder
     if (
       !msg.key.fromMe &&
@@ -2749,14 +2727,10 @@ const handleMessage = async (
       !ticket.useIntegration
     ) {
 
-      logger.info("Entrou no flowbuilder");
-
       const integrations = await ShowQueueIntegrationService(
         whatsapp.integrationId,
         companyId
       );
-
-      logger.info("integração ID: " + integrations.id);
 
       await handleMessageIntegration(
         msg,
