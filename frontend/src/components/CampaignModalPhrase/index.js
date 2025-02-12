@@ -313,7 +313,7 @@ const CampaignModalPhrase = ({ open, onClose, FlowCampaignId, onSave }) => {
                     getContentAnchorEl: null,
                   }}
                   renderValue={() => {
-                    if (selectedWhatsapp === "") {
+                    if (selectedWhatsapp === "" || selectedWhatsapp === null) {
                       return "Selecione uma Conexão";
                     }
                     const whatsapp = whatsApps.find(

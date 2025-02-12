@@ -1893,6 +1893,9 @@ const flowbuilderIntegration = async (
   //const seisHorasEmMilissegundos = 21600000;
   const seisHorasEmMilissegundos = 0;
 
+  logger.info(listPhrase.filter(item => item.phrase.toLowerCase()));
+  logger.info(isFirstMsg);
+
   // Flow with not found phrase
   if (
     listPhrase.filter(item => item.phrase.toLowerCase() === body.toLowerCase()).length === 0 &&
