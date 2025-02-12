@@ -97,6 +97,7 @@ const CampaignModalPhrase = ({ open, onClose, FlowCampaignId, onSave }) => {
       if (nameFlow.length > 0) {
         setFlowSelected(nameFlow[0].name);
       }
+      setSelectedWhatsapp(res.data.details.whatsappId)
       setLoading(false);
     });
   };
@@ -312,7 +313,7 @@ const CampaignModalPhrase = ({ open, onClose, FlowCampaignId, onSave }) => {
                     getContentAnchorEl: null,
                   }}
                   renderValue={() => {
-                    if (selectedWhatsapp === "") {
+                    if (selectedWhatsapp === "" || selectedWhatsapp === null) {
                       return "Selecione uma Conexão";
                     }
                     const whatsapp = whatsApps.find(
