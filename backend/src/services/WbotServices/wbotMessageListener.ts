@@ -1894,7 +1894,8 @@ const flowbuilderIntegration = async (
   const diferencaEmMilissegundos = Math.abs(
     differenceInMilliseconds(dateTicket, dateNow)
   );
-  const seisHorasEmMilissegundos = 21600000;
+  //const seisHorasEmMilissegundos = 21600000;
+  const seisHorasEmMilissegundos = 0;
 
   // Flow with not found phrase
   if (
@@ -2123,8 +2124,6 @@ export const handleMessageIntegration = async (
 ): Promise<void> => {
   const msgType = getTypeMessage(msg);
 
-  logger.info(queueIntegration.type);
-
   if (queueIntegration.type === "n8n" || queueIntegration.type === "webhook") {
     if (queueIntegration?.urlN8N) {
       const options = {
@@ -2153,6 +2152,8 @@ export const handleMessageIntegration = async (
     await typebotListener({ ticket, msg, wbot, typebot: queueIntegration });
   } else if(queueIntegration.type === "flowbuilder") {
     if (!isMenu) {
+
+      logger.info("Chegou no flowbuilder")
 
       await flowbuilderIntegration(
         msg,
@@ -2203,7 +2204,7 @@ const flowBuilderQueue = async (
       id: ticket.flowStopped
     }
   });
-  
+
   logger.info("Localizou flow: " + flow.id);
 
   const mountDataContact = {
@@ -2876,13 +2877,13 @@ const handleMessage = async (
         await handleChartbot(ticket, msg, wbot);
       }
     }
-    
+
     if (whatsapp.queues.length > 1 && ticket.queue) {
       if (ticket.chatbot && !msg.key.fromMe) {
         await handleChartbot(ticket, msg, wbot, dontReadTheFirstQuestion);
       }
     }
-    
+
   } catch (err) {
     console.log(err);
     Sentry.captureException(err);

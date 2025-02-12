@@ -97,6 +97,7 @@ const CampaignModalPhrase = ({ open, onClose, FlowCampaignId, onSave }) => {
       if (nameFlow.length > 0) {
         setFlowSelected(nameFlow[0].name);
       }
+      setSelectedWhatsapp(res.data.details.whatsappId)
       setLoading(false);
     });
   };
