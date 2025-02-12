@@ -1084,8 +1084,6 @@ const verifyQueue = async (
   mediaSent?: Message | undefined
 ) => {
 
-  logger.info("Verificando Fila");
-
   const companyId = ticket.companyId;
 
   const { queues, greetingMessage, maxUseBotQueues, timeUseBotQueues } =
@@ -1784,8 +1782,6 @@ const flowbuilderIntegration = async (
 
   if (!msg.key.fromMe && ticket.status === "closed") {
 
-    logger.info("Mensagem do terceiro e ticket fechado");
-
     console.log("===== CHANGE =====");
     await ticket.update({ status: "pending" });
     await ticket.reload({
@@ -1894,7 +1890,8 @@ const flowbuilderIntegration = async (
   const diferencaEmMilissegundos = Math.abs(
     differenceInMilliseconds(dateTicket, dateNow)
   );
-  const seisHorasEmMilissegundos = 21600000;
+  //const seisHorasEmMilissegundos = 21600000;
+  const seisHorasEmMilissegundos = 0;
 
   // Flow with not found phrase
   if (
@@ -2123,8 +2120,6 @@ export const handleMessageIntegration = async (
 ): Promise<void> => {
   const msgType = getTypeMessage(msg);
 
-  logger.info(queueIntegration.type);
-
   if (queueIntegration.type === "n8n" || queueIntegration.type === "webhook") {
     if (queueIntegration?.urlN8N) {
       const options = {
@@ -2165,9 +2160,6 @@ export const handleMessageIntegration = async (
       );
     } else {
 
-      logger.info(isNaN(parseInt(ticket.lastMessage)));
-      logger.info(ticket.status);
-
       if (
         !isNaN(parseInt(ticket.lastMessage)) &&
         ticket.status !== "open" &&
@@ -2203,8 +2195,6 @@ const flowBuilderQueue = async (
       id: ticket.flowStopped
     }
   });
-  
-  logger.info("Localizou flow: " + flow.id);
 
   const mountDataContact = {
     number: contact.number,
@@ -2226,8 +2216,6 @@ const flowBuilderQueue = async (
   ) {
     return;
   }
-
-  logger.info("Enviando Webhook");
 
   await ActionsWebhookService(
     whatsapp.id,
@@ -2664,7 +2652,6 @@ const handleMessage = async (
       ticket.useIntegration &&
       ticket.queueId
     ) {
-      logger.info("Openai na fila");
       await handleOpenAi(msg, wbot, ticket, contact, mediaSent);
     }
 
@@ -2730,14 +2717,6 @@ const handleMessage = async (
       order: [["id", "DESC"]]
     });
 
-
-    logger.info("Enviada por mim: " + msg.key.fromMe);
-    logger.info("É grupo: " + ticket.isGroup);
-    logger.info("Tem fila no ticket: " + ticket.queue);
-    logger.info("O ticket já tem um usuário: " + ticket.user);
-    logger.info("Whatsapp integration ID: " + isNil(whatsapp.integrationId));
-    logger.info("Ticket está usando integração: " + ticket.useIntegration);
-
     // integração flowbuilder
     if (
       !msg.key.fromMe &&
@@ -2748,14 +2727,10 @@ const handleMessage = async (
       !ticket.useIntegration
     ) {
 
-      logger.info("Entrou no flowbuilder");
-
       const integrations = await ShowQueueIntegrationService(
         whatsapp.integrationId,
         companyId
       );
-
-      logger.info("integração ID: " + integrations.id);
 
       await handleMessageIntegration(
         msg,
@@ -2876,13 +2851,13 @@ const handleMessage = async (
         await handleChartbot(ticket, msg, wbot);
       }
     }
-    
+
     if (whatsapp.queues.length > 1 && ticket.queue) {
       if (ticket.chatbot && !msg.key.fromMe) {
         await handleChartbot(ticket, msg, wbot, dontReadTheFirstQuestion);
       }
     }
-    
+
   } catch (err) {
     console.log(err);
     Sentry.captureException(err);

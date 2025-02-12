@@ -2,6 +2,7 @@ import { WebhookModel } from "../../models/Webhook";
 import User from "../../models/User";
 import { FlowBuilderModel } from "../../models/FlowBuilder";
 import { FlowCampaignModel } from "../../models/FlowCampaign";
+import Whatsapp from "../../models/Whatsapp";
 
 interface Request {
   companyId: number;
@@ -16,16 +17,16 @@ const GetFlowsCampaignDataService = async ({
   companyId,
   idFlow
 }: Request): Promise<Response> => {
-  
+
     try {
-    
+
         // Realiza a consulta com paginação usando findAndCountAll
         const { count, rows } = await FlowCampaignModel.findAndCountAll({
           where: {
             id: idFlow
           }
         });
-        
+
         let hook = rows[0]
 
         return {
