@@ -7,9 +7,7 @@ import AppError from "../errors/AppError";
 import options from "../config/Gn";
 import Company from "../models/Company";
 import Invoices from "../models/Invoices";
-import Subscriptions from "../models/Subscriptions";
 import { getIO } from "../libs/socket";
-import UpdateUserService from "../services/UserServices/UpdateUserService";
 import {logger} from "../utils/logger";
 
 const app = express();
@@ -70,7 +68,7 @@ export const createSubscription = async (
     });
 
     let bodyWebhook = {
-      webhookUrl: `https://69c4-2804-2488-7088-f400-b416-ec6-1ab3-ba1f.ngrok-free.app/subscription/webhook?ignorar=`
+      webhookUrl: `${process.env.BACKEND_URL}/subscription/webhook?ignorar=`
     };
 
     const params = {
@@ -129,8 +127,6 @@ export const webhook = async (
   ): Promise<Response> => {
 
   const { evento } = req.body;
-
-  logger.info(req.body);
 
   if (evento === "teste_webhook") {
     return res.json({ ok: true });
