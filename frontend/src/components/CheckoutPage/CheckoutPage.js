@@ -49,7 +49,7 @@ function _renderStepContent(step, setFieldValue, setActiveStep, values ) {
     case 0:
       return <AddressForm formField={formField} values={values} setFieldValue={setFieldValue}  />;
     case 1:
-      return <PaymentForm 
+      return <PaymentForm
       formField={formField} 
       setFieldValue={setFieldValue} 
       setActiveStep={setActiveStep} 
@@ -91,6 +91,7 @@ function _renderStepContent(step, setFieldValue, setActiveStep, values ) {
       setDatePayment(data)
       actions.setSubmitting(false);
       setActiveStep(activeStep + 1);
+      console.log(activeStep + 1);
       toast.success(i18n.t("checkoutPage.success"));
     } catch (err) {
       toastError(err);
