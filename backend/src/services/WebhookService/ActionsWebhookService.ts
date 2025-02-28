@@ -343,7 +343,7 @@ export const ActionsWebhookService = async (
       }
 
       if (nodeSelected.type === "ticket") {
-        /*const queueId = nodeSelected.data?.data?.id || nodeSelected.data?.id;
+        const queueId = nodeSelected.data?.data?.id || nodeSelected.data?.id;
         const queue = await ShowQueueService(queueId, companyId);
 
         await ticket.update({
@@ -373,56 +373,39 @@ export const ActionsWebhookService = async (
           companyId
         });
 
-        await CreateLogTicketService({
-          ticketId: ticket.id,
-          type: "queue",
-          queueId: queue.id
-        });
-
-        let settings = await CompaniesSettings.findOne({
+        const count = await Ticket.findAndCountAll({
           where: {
-            companyId: companyId
+            userId: null,
+            status: "pending",
+            companyId,
+            queueId: queue.id,
+            whatsappId: whatsapp.id,
+            isGroup: false
           }
         });
 
-        const enableQueuePosition = settings.sendQueuePosition === "enabled";
+        const qtd = count.count === 0 ? 1 : count.count;
 
-        if (enableQueuePosition) {
-          const count = await Ticket.findAndCountAll({
-            where: {
-              userId: null,
-              status: "pending",
-              companyId,
-              queueId: queue.id,
-              whatsappId: whatsapp.id,
-              isGroup: false
-            }
-          });
+        const msgFila = `Sua posição na fila é: *${qtd}*`;
 
-          // Lógica para enviar posição da fila de atendimento
-          const qtd = count.count === 0 ? 1 : count.count;
+        const ticketDetails = await ShowTicketService(ticket.id, companyId);
 
-          const msgFila = `${settings.sendQueuePositionMessage} *${qtd}*`;
+        const bodyFila = formatBody(`${msgFila}`, ticket.contact);
 
-          const ticketDetails = await ShowTicketService(ticket.id, companyId);
+        await delay(3000);
+        await typeSimulation(ticket, "composing");
 
-          const bodyFila = formatBody(`${msgFila}`, ticket.contact);
+        await SendWhatsAppMessage({
+          body: bodyFila,
+          ticket: ticketDetails,
+          quotedMsg: null
+        });
 
-          await delay(3000);
-          await typeSimulation(ticket, "composing");
+        SetTicketMessagesAsRead(ticketDetails);
 
-          await SendWhatsAppMessage({
-            body: bodyFila,
-            ticket: ticketDetails,
-            quotedMsg: null
-          });
-
-          SetTicketMessagesAsRead(ticketDetails);
-
-          await ticketDetails.update({
-            lastMessage: bodyFila
-          });
-        }*/
+        await ticketDetails.update({
+          lastMessage: bodyFila
+        });
       }
 
       if (nodeSelected.type === "singleBlock") {
