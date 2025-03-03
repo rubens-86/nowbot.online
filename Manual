@@ -1,0 +1,1877 @@
+# NowBot - Documentação Técnica Abrangente
+
+
+## Sumário
+1. [Visão Geral do Sistema](#1-visão-geral-do-sistema)
+2. [Arquitetura do Projeto](#2-arquitetura-do-projeto)
+3. [Estrutura de Diretórios](#3-estrutura-de-diretórios)
+4. [Stack Tecnológica](#4-stack-tecnológica)
+5. [Instalação e Configuração](#5-instalação-e-configuração)
+6. [Fluxos de Dados e Processos](#6-fluxos-de-dados-e-processos)
+7. [Modelos de Dados](#7-modelos-de-dados)
+8. [API e Endpoints](#8-api-e-endpoints)
+9. [Autenticação e Autorização](#9-autenticação-e-autorização)
+10. [Frontend](#10-frontend)
+11. [Integração com WhatsApp](#11-integração-com-whatsapp)
+12. [Automação de Fluxos](#12-automação-de-fluxos)
+13. [Sistema de Tickets](#13-sistema-de-tickets)
+14. [Gestão de Contatos](#14-gestão-de-contatos)
+15. [Integrações com Serviços Externos](#15-integrações-com-serviços-externos)
+16. [Websockets e Comunicação em Tempo Real](#16-websockets-e-comunicação-em-tempo-real)
+17. [Processos de Background](#17-processos-de-background)
+18. [Estratégia de Testes](#18-estratégia-de-testes)
+19. [Padrões de Código e Convenções](#19-padrões-de-código-e-convenções)
+20. [Problemas Conhecidos e Soluções](#20-problemas-conhecidos-e-soluções)
+21. [Configurações Avançadas](#21-configurações-avançadas)
+22. [Ambiente de Produção](#22-ambiente-de-produção)
+
+
+---
+
+
+## 1. Visão Geral do Sistema
+
+
+### 1.1 Propósito
+O NowBot é uma plataforma completa para gerenciamento de atendimento e automação de conversas via WhatsApp. O sistema permite gerenciar contatos, automatizar fluxos de conversação, e acompanhar tickets de atendimento em uma interface unificada.
+
+
+### 1.2 Principais Funcionalidades
+- **Multiusuário**: Suporte a múltiplos atendentes e perfis de acesso
+- **Multi-WhatsApp**: Conexão com múltiplas contas de WhatsApp simultaneamente
+- **Tickets de Atendimento**: Gestão de conversas como tickets organizados em filas
+- **Automação**: Construtor visual de fluxos de conversação automatizados
+- **Gestão de Contatos**: Importação, categorização e gerenciamento de contatos
+- **Campanhas**: Envio de mensagens em massa para grupos selecionados de contatos
+- **Relatórios e Dashboard**: Visualização de métricas e estatísticas de atendimento
+
+
+### 1.3 Público-Alvo
+Empresas e organizações que necessitam gerenciar atendimento ao cliente via WhatsApp, com foco em automação e escala.
+
+
+---
+
+
+## 2. Arquitetura do Projeto
+
+
+### 2.1 Visão Geral da Arquitetura
+O NowBot utiliza uma arquitetura de microserviços monolítica, com separação clara entre frontend e backend:
+
+
+- **Frontend**: Single Page Application (SPA) em React
+- **Backend**: API RESTful em Node.js/Express
+- **Banco de Dados**: PostgreSQL para persistência de dados
+- **Cache**: Redis para armazenamento em cache e filas
+- **Websockets**: Comunicação em tempo real via Socket.IO
+- **Gerenciamento de Processos**: PM2 para orquestração de serviços
+
+
+### 2.2 Diagrama de Arquitetura
+
+
+```
+┌─────────────┐          ┌─────────────┐
+│             │          │             │
+│  Frontend   │◄────────►│   Backend   │
+│  (React)    │  HTTP/WS │  (Node.js)  │
+│             │          │             │
+└─────────────┘          └──────┬──────┘
+                               │
+                               ▼
+┌─────────────┐          ┌──────────────┐
+│             │          │              │
+│    Redis    │◄────────►│  PostgreSQL  │
+│  (Cache)    │          │   (Dados)    │
+│             │          │              │
+└─────────────┘          └──────────────┘
+                               │
+                               ▼
+                        ┌──────────────┐
+                        │              │
+                        │   WhatsApp   │
+                        │     API      │
+                        │              │
+                        └──────────────┘
+```
+
+
+### 2.3 Princípios de Design
+- **Separação de Responsabilidades**: Código organizado em camadas (controllers, services, models)
+- **Injeção de Dependências**: Serviços são injetados onde necessário
+- **Reatividade**: Atualizações em tempo real via WebSockets
+- **Escalabilidade**: Componentes projetados para escala horizontal
+
+
+---
+
+
+## 3. Estrutura de Diretórios
+
+
+### 3.1 Estrutura Principal
+```
+/nowbot
+  ├── /backend           # API Node.js
+  │   ├── /src           # Código-fonte
+  │   ├── /public        # Arquivos estáticos
+  │   └── /node_modules  # Dependências
+  │
+  └── /frontend          # Aplicação React
+      ├── /src           # Código-fonte
+      ├── /public        # Arquivos estáticos
+      └── /node_modules  # Dependências
+```
+
+
+### 3.2 Estrutura do Backend
+```
+/backend/src
+  ├── /controllers       # Controladores da API
+  ├── /services          # Lógica de negócio
+  ├── /models            # Modelos de dados
+  ├── /routes            # Definição de rotas
+  ├── /middleware        # Middlewares (auth, etc.)
+  ├── /database          # Configuração de DB
+  ├── /libs              # Bibliotecas internas
+  ├── /helpers           # Funções auxiliares
+  ├── /config            # Configurações
+  ├── /queues            # Filas e jobs
+  └── /utils             # Utilitários
+```
+
+
+### 3.3 Estrutura do Frontend
+```
+/frontend/src
+  ├── /components        # Componentes React
+  │   ├── /TicketList    # Componentes relacionados a tickets
+  │   ├── /ContactList   # Componentes relacionados a contatos
+  │   └── /...           # Outros componentes
+  ├── /pages             # Páginas/rotas da aplicação
+  ├── /services          # Serviços (API, etc.)
+  ├── /hooks             # React hooks personalizados
+  ├── /context           # Contextos React
+  ├── /reducers          # Reducers para gerenciamento de estado
+  ├── /assets            # Imagens, ícones, etc.
+  ├── /layouts           # Layouts da aplicação
+  └── /utils             # Utilitários
+```
+
+
+---
+
+
+## 4. Stack Tecnológica
+
+
+### 4.1 Frontend
+- **Framework**: React.js
+- **UI Library**: Material-UI
+- **Estado**: Context API, useReducer
+- **Roteamento**: react-router-dom
+- **Comunicação HTTP**: Axios
+- **Websockets**: Socket.IO Client
+- **Formulários**: Formik, Yup
+- **i18n**: i18next para internacionalização
+- **Estilização**: CSS-in-JS (Material-UI styled)
+
+
+### 4.2 Backend
+- **Runtime**: Node.js
+- **Framework**: Express
+- **ORM**: Sequelize
+- **Banco de Dados**: PostgreSQL
+- **Cache**: Redis
+- **Autenticação**: JWT (jsonwebtoken)
+- **Websockets**: Socket.IO
+- **Validação**: Yup
+- **Logs**: Winston
+- **Monitoramento**: Sentry
+- **Fila de Jobs**: Bull (baseado em Redis)
+
+
+### 4.3 Integração WhatsApp
+- **Cliente WhatsApp**: Baileys
+- **Processamento de Mídia**: Sharp (imagens), FFmpeg (áudio/vídeo)
+
+
+### 4.4 DevOps
+- **Gerenciamento de Processos**: PM2
+- **CI/CD**: Scripts automatizados
+- **Servidor Web**: Nginx como proxy reverso
+- **Monitoramento**: PM2 integrado
+
+
+---
+
+
+## 5. Instalação e Configuração
+
+
+### 5.1 Requisitos do Sistema
+- Node.js (v14.x ou superior)
+- PostgreSQL (v12.x ou superior)
+- Redis (v6.x ou superior)
+- Yarn ou NPM (gerenciador de pacotes)
+- Sistema operacional: Linux, Windows ou macOS
+- Acesso a uma conta WhatsApp
+
+
+### 5.2 Configuração do Backend
+1. Clone o repositório
+2. Navegue até o diretório `/backend`
+3. Crie um arquivo `.env` baseado no `.env.example`
+4. Configure as seguintes variáveis de ambiente essenciais:
+   ```
+   NODE_ENV=development
+   BACKEND_URL=http://localhost:4000
+   FRONTEND_URL=http://localhost:3000
+   PORT=4000
+   
+   DB_DIALECT=postgres
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=nowbot
+   DB_PASS=nowbot
+   DB_NAME=nowbot
+   
+   JWT_SECRET=chave-secreta-jwt
+   JWT_REFRESH_SECRET=chave-secreta-refresh
+   
+   REDIS_URI=redis://localhost:6379
+   ```
+5. Instale as dependências: `npm install`
+6. Execute migrações do banco: `npx sequelize db:migrate`
+7. Execute seeds (opcional): `npx sequelize db:seed:all`
+8. Inicie o servidor: `npm run dev`
+
+
+### 5.3 Configuração do Frontend
+1. Navegue até o diretório `/frontend`
+2. Crie um arquivo `.env` baseado no `.env.example`
+3. Configure a URL do backend:
+   ```
+   REACT_APP_BACKEND_URL=http://localhost:4000
+   REACT_APP_HOURS_CLOSE_TICKETS_AUTO=24
+   ```
+4. Instale as dependências: `npm install`
+5. Inicie o servidor de desenvolvimento: `npm start`
+
+
+### 5.4 Configuração do Ambiente de Produção
+1. Compile o frontend: `cd frontend && npm run build`
+2. Compile o backend: `cd backend && npm run build`
+3. Configure o PM2:
+   ```
+   pm2 start backend/dist/server.js --name backend
+   pm2 serve frontend/build 3000 --name frontend
+   ```
+4. Configure o Nginx como proxy reverso (exemplo básico):
+   ```nginx
+   server {
+       listen 80;
+       server_name api.example.com;
+       
+       location / {
+           proxy_pass http://localhost:4000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   
+   server {
+       listen 80;
+       server_name app.example.com;
+       
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+
+---
+
+
+## 6. Fluxos de Dados e Processos
+
+
+### 6.1 Fluxo de Autenticação
+1. O usuário envia credenciais (email/senha) para `/auth/login`
+2. O backend valida as credenciais e emite tokens JWT (access e refresh)
+3. Frontend armazena tokens no localStorage
+4. Requisições subsequentes incluem o token no header `Authorization`
+5. Token refresh é usado para renovar o access token quando expirado
+
+
+### 6.2 Fluxo de Recebimento de Mensagens
+1. WhatsApp envia nova mensagem para o número conectado
+2. Baileys captura a mensagem e emite evento interno
+3. O serviço `handleMessage` processa a mensagem:
+   - Verifica se é de um contato conhecido (cria se necessário)
+   - Verifica se existe um ticket aberto (cria se necessário)
+   - Aplica regras de automação (se configuradas)
+   - Emite evento via WebSocket para o frontend
+4. Frontend atualiza a interface em tempo real
+
+
+### 6.3 Fluxo de Envio de Mensagens
+1. Usuário envia mensagem via interface
+2. Frontend envia requisição para `/messages`
+3. Backend processa a mensagem:
+   - Valida permissões do usuário
+   - Formata a mensagem e anexos
+   - Envia para o WhatsApp via Baileys
+   - Salva a mensagem no banco de dados
+   - Atualiza o status do ticket
+   - Emite evento via WebSocket
+
+
+### 6.4 Fluxo de Automação
+1. Nova mensagem é recebida do WhatsApp
+2. Sistema verifica se existem fluxos de automação aplicáveis:
+   - Por palavra-chave na mensagem
+   - Por horário de atendimento
+   - Por status do contato
+3. Se aplicável, inicia o fluxo de automação:
+   - Envia respostas pré-definidas
+   - Executa ações (criar ticket, transferir, etc.)
+   - Aguarda resposta do usuário (se interativo)
+4. Continua o fluxo até completar ou transferir para atendente humano
+
+
+### 6.5 Processo de Criação de Ticket
+1. Ticket é criado (manualmente ou automaticamente)
+2. Sistema atribui o ticket a uma fila com base em:
+   - Configurações padrão
+   - Palavras-chave
+   - Origem da mensagem
+3. Notificações são enviadas:
+   - Para a fila de atendentes disponíveis
+   - Para usuários específicos (se configurado)
+4. Sistema atualiza os dashboards em tempo real
+
+
+---
+
+
+## 7. Modelos de Dados
+
+
+### 7.1 Principais Entidades
+
+
+#### 7.1.1 User
+```
+id: bigint (PK)
+name: string
+email: string
+password: string (hash)
+profile: enum (admin, supervisor, agent)
+queues: belongsToMany Queue
+company_id: bigint (FK)
+```
+
+
+#### 7.1.2 Contact
+```
+id: bigint (PK)
+name: string
+number: string
+email: string
+profile_pic_url: string
+company_id: bigint (FK)
+tags: belongsToMany Tag
+customFields: hasMany ContactCustomField
+```
+
+
+#### 7.1.3 Ticket
+```
+id: bigint (PK)
+status: enum (open, pending, closed)
+unread_messages: int
+last_message: string
+contact_id: bigint (FK)
+user_id: bigint (FK, nullable)
+queue_id: bigint (FK, nullable)
+whatsapp_id: bigint (FK)
+company_id: bigint (FK)
+```
+
+
+#### 7.1.4 Message
+```
+id: bigint (PK)
+body: text
+media_type: string (nullable)
+media_url: string (nullable)
+ticket_id: bigint (FK)
+contact_id: bigint (FK)
+user_id: bigint (FK, nullable)
+from_me: boolean
+read: boolean
+timestamp: datetime
+```
+
+
+#### 7.1.5 Queue
+```
+id: bigint (PK)
+name: string
+color: string
+company_id: bigint (FK)
+users: belongsToMany User
+```
+
+
+#### 7.1.6 WhatsApp
+```
+id: bigint (PK)
+name: string
+session: text
+qrcode: text
+status: string
+battery: string
+company_id: bigint (FK)
+default: boolean
+```
+
+
+#### 7.1.7 Company
+```
+id: bigint (PK)
+name: string
+plan_id: bigint (FK)
+due_date: date
+status: boolean
+settings: jsonb
+```
+
+
+#### 7.1.8 Flow
+```
+id: bigint (PK)
+name: string
+status: boolean
+nodes: jsonb
+edges: jsonb
+company_id: bigint (FK)
+start_on_keyword: string
+```
+
+
+### 7.2 Relacionamentos Principais
+- User N:N Queue (através de UserQueue)
+- Contact N:N Tag (através de ContactTag)
+- Contact 1:N Ticket
+- Ticket 1:N Message
+- WhatsApp 1:N Ticket
+- Company 1:N User
+- Company 1:N Contact
+- Company 1:N Queue
+- Company 1:N WhatsApp
+- Company 1:N Flow
+
+
+### 7.3 Índices e Constraints
+- Índice em `Contact.number` + `Contact.company_id` (unique)
+- Índice em `Ticket.status` + `Ticket.company_id`
+- Índice em `Message.ticket_id` + `Message.timestamp`
+- Índice em `User.email` + `User.company_id` (unique)
+
+
+---
+
+
+## 8. API e Endpoints
+
+
+### 8.1 Autenticação e Usuários
+- `POST /auth/login` - Login de usuário
+- `POST /auth/refresh` - Atualizar token JWT
+- `POST /auth/logout` - Logout de usuário
+- `GET /users` - Listar usuários
+- `GET /users/:id` - Obter usuário específico
+- `POST /users` - Criar novo usuário
+- `PUT /users/:id` - Atualizar usuário
+- `DELETE /users/:id` - Remover usuário
+
+
+### 8.2 Contatos
+- `GET /contacts` - Listar contatos (paginados)
+- `GET /contacts/list` - Listar todos os contatos (não paginado)
+- `GET /contacts/:id` - Obter contato específico
+- `POST /contacts` - Criar novo contato
+- `POST /contacts/upload` - Importar contatos via CSV
+- `PUT /contacts/:id` - Atualizar contato
+- `DELETE /contacts/:id` - Remover contato
+- `POST /contacts/import` - Importar contatos do WhatsApp
+
+
+### 8.3 Tickets e Mensagens
+- `GET /tickets` - Listar tickets (filtráveis)
+- `GET /tickets/:id` - Obter ticket específico
+- `POST /tickets` - Criar novo ticket
+- `PUT /tickets/:id` - Atualizar ticket
+- `DELETE /tickets/:id` - Remover ticket
+- `GET /tickets/:id/messages` - Listar mensagens de um ticket
+- `POST /messages` - Enviar nova mensagem
+
+
+### 8.4 WhatsApp
+- `GET /whatsapp` - Listar conexões WhatsApp
+- `GET /whatsapp/:id` - Obter conexão específica
+- `POST /whatsapp` - Criar nova conexão
+- `PUT /whatsapp/:id` - Atualizar conexão
+- `DELETE /whatsapp/:id` - Remover conexão
+- `PUT /whatsapp/:id/start` - Iniciar sessão WhatsApp
+- `POST /whatsapp/qrcode` - Obter QR Code para conexão
+
+
+### 8.5 Filas
+- `GET /queues` - Listar filas
+- `GET /queues/:id` - Obter fila específica
+- `POST /queues` - Criar nova fila
+- `PUT /queues/:id` - Atualizar fila
+- `DELETE /queues/:id` - Remover fila
+
+
+### 8.6 Automação
+- `GET /flows` - Listar fluxos de automação
+- `GET /flows/:id` - Obter fluxo específico
+- `POST /flows` - Criar novo fluxo
+- `PUT /flows/:id` - Atualizar fluxo
+- `DELETE /flows/:id` - Remover fluxo
+
+
+### 8.7 Integrações com Serviços Externos
+- `POST /openai/chat` - Integração com OpenAI
+- `POST /typebot/webhook` - Webhook para Typebot
+
+
+---
+
+
+## 9. Autenticação e Autorização
+
+
+### 9.1 Estratégia de Autenticação
+- JWT (JSON Web Tokens) para autenticação stateless
+- Tokens de acesso com expiração curta (2h)
+- Tokens de refresh com expiração longa (7d)
+- Senha armazenada com bcrypt (hash + salt)
+
+
+### 9.2 Middleware de Autenticação
+Implementado em `middleware/isAuth.js`, valida tokens JWT e injeta informações do usuário no objeto `req.user`.
+
+
+```javascript
+// Exemplo simplificado
+const isAuth = async (req, res, next) => {
+  try {
+    const token = req.header("Authorization")?.replace("Bearer ", "");
+    if (!token) throw new Error("Authentication required");
+   
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findByPk(decoded.id);
+    if (!user) throw new Error("User not found");
+   
+    req.user = user;
+    next();
+  } catch (err) {
+    res.status(401).json({ error: "Not authorized" });
+  }
+};
+```
+
+
+### 9.3 Perfis de Acesso
+- **admin**: Acesso total ao sistema
+- **supervisor**: Gerencia filas e atendentes, acesso a relatórios
+- **agent**: Atendimento de tickets dentro de suas filas
+
+
+### 9.4 Controle de Acesso
+- Middleware `can.js` valida permissões baseadas no perfil do usuário
+- Verificações adicionais para garantir acesso apenas a recursos da própria empresa
+
+
+```javascript
+// Exemplo de uso
+app.put("/users/:id", isAuth, can("admin"), UserController.update);
+```
+
+
+---
+
+
+## 10. Frontend
+
+
+### 10.1 Estrutura de Componentes Principais
+
+
+#### 10.1.1 Layout Principal
+- `layout/index.js`: Layout principal com drawer lateral e appbar
+- `layout/MainListItems.js`: Itens do menu lateral
+
+
+#### 10.1.2 Tickets e Atendimento
+- `pages/Dashboard/index.js`: Dashboard principal
+- `pages/Tickets/index.js`: Listagem de tickets
+- `components/TicketsList/index.js`: Lista de tickets
+- `components/TicketListItem/index.js`: Item individual de ticket
+- `components/MessagesList/index.js`: Lista de mensagens de um ticket
+- `components/MessageInput/index.js`: Input para enviar mensagens
+
+
+#### 10.1.3 Contatos
+- `pages/Contacts/index.js`: Gestão de contatos
+- `components/ContactModal/index.js`: Modal para criar/editar contato
+- `components/ImportContactsModal/index.js`: Importação de contatos
+
+
+#### 10.1.4 Automação
+- `pages/FlowBuilder/index.js`: Construtor de fluxos de automação
+- `pages/FlowBuilderConfig/index.js`: Configuração de fluxos
+- `components/FlowBuilderSingleBlockModal/index.js`: Editor de blocos de fluxo
+
+
+### 10.2 Gerenciamento de Estado
+- Context API para estado global
+- Hooks personalizados para lógica reutilizável
+- useReducer para estados complexos
+
+
+#### 10.2.1 Principais Contextos
+- `AuthContext`: Autenticação e informações do usuário
+- `SocketContext`: Gerenciamento de conexões WebSocket
+- `WhatsAppsContext`: Estado das conexões WhatsApp
+
+
+### 10.3 Roteamento
+```javascript
+<Router>
+  <Switch>
+    <Route path="/login" component={Login} />
+    <PrivateRoute path="/tickets/:ticketId?" component={Tickets} />
+    <PrivateRoute path="/contacts" component={Contacts} />
+    <PrivateRoute path="/flows" component={FlowBuilder} />
+    <PrivateRoute path="/queues" component={Queues} />
+    <PrivateRoute path="/users" component={Users} />
+    <PrivateRoute path="/settings" component={Settings} />
+    <PrivateRoute path="/dashboard" component={Dashboard} />
+    <PrivateRoute path="/" exact component={Dashboard} />
+  </Switch>
+</Router>
+```
+
+
+### 10.4 Comunicação com o Backend
+- `services/api.js`: Cliente Axios configurado
+- Interceptors para tratamento de tokens e erros
+
+
+```javascript
+api.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
+
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      // Tenta refresh ou redireciona para login
+    }
+    return Promise.reject(error);
+  }
+);
+```
+
+
+---
+
+
+## 11. Integração com WhatsApp
+
+
+### 11.1 Biblioteca Utilizada
+O sistema utiliza a biblioteca [Baileys](https://github.com/adiwajshing/Baileys) para integração com o WhatsApp Web, permitindo envio e recebimento de mensagens, gerenciamento de sessões e manipulação de mídia.
+
+
+### 11.2 Arquitetura da Integração WhatsApp
+O NowBot implementa um sistema robusto para gerenciar múltiplas conexões de WhatsApp simultaneamente:
+
+
+```
+┌─────────────────┐       ┌─────────────────┐
+│                 │       │                 │
+│  Modelo Whatsapp│◄─────►│  Modelo Baileys │
+│  (Configuração) │       │   (Sessão)      │
+│                 │       │                 │
+└────────┬────────┘       └─────────────────┘
+         │
+         ▼
+┌─────────────────┐       ┌─────────────────┐
+│                 │       │                 │
+│  Sessions Map   │◄─────►│  Event Handlers │
+│  (Conexões)     │       │   (Listeners)   │
+│                 │       │                 │
+└────────┬────────┘       └─────────────────┘
+         │
+         ▼
+┌─────────────────┐
+│                 │
+│  WebSocket      │
+│  (Notificações) │
+│                 │
+└─────────────────┘
+```
+
+
+### 11.3 Inicialização da Conexão
+O sistema utiliza o método `initWASocket` para estabelecer e gerenciar conexões com o WhatsApp:
+
+
+```javascript
+export const initWASocket = async (whatsapp: Whatsapp): Promise<Session> => {
+  // Cria um store para dados em memória
+  const store = makeInMemoryStore({ logger: loggerBaileys });
+ 
+  // Recupera o estado de autenticação salvo no banco de dados
+  const { state, saveState } = await authState(whatsapp);
+ 
+  // Cria socket WhatsApp com autenticação e configuração
+  const wsocket = makeWASocket({
+    logger: loggerBaileys,
+    printQRInTerminal: false,
+    browser: Browsers.appropriate("Desktop"),
+    auth: {
+      creds: state.creds,
+      keys: makeCacheableSignalKeyStore(state.keys, logger),
+    },
+    version,
+    // Configurações adicionais...
+  });
+ 
+  // Configura listeners para eventos
+  wsocket.ev.on("connection.update", async ({ connection, lastDisconnect, qr }) => {
+    // Tratamento de conexão/desconexão com reconexão automática
+  });
+ 
+  // Adiciona a sessão ao mapa global
+  sessions.set(whatsapp.id, wsocket);
+ 
+  return wsocket;
+}
+```
+
+
+### 11.4 Tratamento de Eventos
+O sistema captura e processa vários eventos da API do WhatsApp:
+
+
+- **connection.update**: Gerencia o ciclo de vida da conexão WhatsApp
+  - Reconexão automática em caso de desconexão temporária
+  - Geração de QR Code para novas conexões
+  - Atualização do status da conexão no banco de dados
+
+
+- **messages.upsert**: Processa novas mensagens recebidas
+  - Criação automática de contatos e tickets
+  - Disparo de automações de fluxo
+  - Notificação via WebSockets para atualização em tempo real
+
+
+- **message-status.update**: Atualiza o status de entrega das mensagens
+  - Confirmação de recebimento e leitura
+  - Atualização do status no banco de dados
+
+
+### 11.5 Persistência de Sessão
+O NowBot implementa um sistema de persistência de sessão que permite:
+
+
+- Armazenamento do estado da conexão no banco de dados na tabela `Baileys`
+- Restauração automática da sessão ao reiniciar o servidor
+- Gerenciamento de múltiplas sessões em diferentes instâncias do servidor
+- Cache de contatos e chats para otimização de desempenho
+
+
+---
+
+
+## 12. Automação de Fluxos
+
+
+### 12.1 Arquitetura de Fluxos
+O NowBot implementa um sistema visual de construção de fluxos que permite automação avançada:
+
+
+```
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  FlowBuilder     │────►│  Flow Storage   │
+│  (Visual Editor) │     │  (JSON Schema)  │
+│                  │     │                 │
+└──────────────────┘     └────────┬────────┘
+                                  │
+                                  ▼
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  Trigger Events  │◄────┤  Flow Executor  │
+│  (Keywords/Time) │     │  (Engine)       │
+│                  │     │                 │
+└──────────────────┘     └────────┬────────┘
+                                  │
+                                  ▼
+                         ┌─────────────────┐
+                         │                 │
+                         │  Actions        │
+                         │  (Messages/API) │
+                         │                 │
+                         └─────────────────┘
+```
+
+
+### 12.2 Tipos de Fluxos Implementados
+
+
+O sistema suporta diferentes tipos de fluxos automatizados:
+
+
+1. **Fluxo de Boas-vindas**: Acionado quando um novo contato inicia uma conversa
+   ```javascript
+   const flow = await FlowBuilderModel.findOne({
+     where: { id: whatsapp.flowIdWelcome }
+   });
+   
+   if (flow) {
+     const nodes = flow.flow["nodes"];
+     const connections = flow.flow["connections"];
+     
+     // Executa o fluxo de boas-vindas
+     await ActionsWebhookService(
+       whatsapp.id,
+       whatsapp.flowIdWelcome,
+       ticket.companyId,
+       nodes,
+       connections,
+       flow.flow["nodes"][0].id,
+       null,
+       "",
+       "",
+       null,
+       ticket.id,
+       mountDataContact,
+       msg
+     );
+   }
+   ```
+
+
+2. **Fluxo por Palavra-chave**: Acionado quando uma mensagem contém palavras-chave específicas
+   ```javascript
+   // Verificação de palavras-chave no corpo da mensagem
+   if (listPhrase.filter(item => item.phrase.toLowerCase() === body.toLowerCase()).length !== 0) {
+     const flowDispar = listPhrase.filter(item => item.phrase.toLowerCase() === body.toLowerCase())[0];
+     const flow = await FlowBuilderModel.findOne({
+       where: { id: flowDispar.flowId }
+     });
+     
+     // Executa o fluxo associado à palavra-chave
+     await ActionsWebhookService(/* parâmetros */);
+   }
+   ```
+
+
+3. **Fluxo de Campanha**: Utilizado para envio programado de mensagens a grupos de contatos
+4. **Fluxo de Menu Interativo**: Permite criação de árvores de decisão baseadas nas respostas do cliente
+
+
+### 12.3 Estrutura dos Fluxos
+Cada fluxo é estruturado como um objeto JSON contendo:
+
+
+- **Nodes (nós)**: Representam as etapas do fluxo (mensagens, condições, ações)
+- **Connections (conexões)**: Definem as transições entre os nós
+- **Properties (propriedades)**: Configurações específicas de cada nó
+
+
+### 12.4 Implementação do Executor de Fluxos
+O serviço `ActionsWebhookService` é responsável por executar os fluxos, processando os nós e suas conexões sequencialmente e determinando as próximas ações com base nas respostas do usuário.
+
+
+---
+
+
+## 13. Sistema de Tickets
+
+
+### 13.1 Arquitetura de Tickets
+O sistema de tickets é implementado como o núcleo do NowBot, gerenciando todo o ciclo de vida das conversas:
+
+
+```
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  Nova Mensagem   │────►│  Criação Ticket │
+│  (WhatsApp)      │     │  (Auto/Manual)  │
+│                  │     │                 │
+└──────────────────┘     └────────┬────────┘
+                                  │
+                                  ▼
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  Roteamento      │◄────┤  Filas          │
+│  (Regras/Manual) │     │  (Departamentos)│
+│                  │     │                 │
+└───────┬──────────┘     └─────────────────┘
+        │
+        ▼
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  Atendimento     │────►│  Fechamento     │
+│  (Humano/Bot)    │     │  (Rating)       │
+│                  │     │                 │
+└──────────────────┘     └─────────────────┘
+```
+
+
+### 13.2 Ciclo de Vida do Ticket
+O sistema implementa um ciclo de vida completo para os tickets:
+
+
+1. **Criação**: Tickets são criados automaticamente ao receber mensagens ou manualmente por agentes
+   ```javascript
+   const CreateTicketService = async ({
+     contactId,
+     status,
+     userId,
+     queueId,
+     companyId,
+     whatsappId
+   }: Request): Promise<Ticket> => {
+     // Verificação de tickets abertos
+     await CheckContactOpenTickets(contactId, whatsappId);
+     
+     // Criação ou recuperação do ticket
+     const [{ id }] = await Ticket.findOrCreate({
+       where: { contactId, companyId, whatsappId },
+       defaults: {/* ... */}
+     });
+     
+     // Atualização dos dados do ticket
+     await Ticket.update(
+       { companyId, queueId, userId, whatsappId: defaultWhatsapp.id, status: "open" },
+       { where: { id } }
+     );
+     
+     // Notificação via WebSocket
+     io.to(ticket.id.toString()).emit("ticket", {
+       action: "update",
+       ticket
+     });
+     
+     return ticket;
+   };
+   ```
+
+
+2. **Estados do Ticket**:
+   - **Pending**: Aguardando atribuição a um atendente
+   - **Open**: Em atendimento por um atendente
+   - **Closed**: Atendimento finalizado
+   - **Interrupted**: Atendimento interrompido
+
+
+3. **Tracking de Atendimento**: O sistema registra métricas importantes:
+   - Horário de criação
+   - Tempo em fila (queuedAt)
+   - Início do atendimento (startedAt)
+   - Finalização (finishedAt)
+   - Avaliação do cliente (ratingAt, rated)
+
+
+### 13.3 Gerenciamento de Filas
+O sistema implementa um sofisticado gerenciamento de filas:
+
+
+1. **Roteamento Automático**: Baseado em palavras-chave ou origem da mensagem
+2. **Atribuição Manual**: Supervisores podem redistribuir tickets entre filas
+3. **Transferência**: Atendentes podem transferir tickets para outras filas ou colegas
+4. **Notificações**: Mensagens automáticas para o cliente informando transferências
+
+
+```javascript
+// Exemplo de mensagem automática ao transferir ticket para outra fila
+const translatedMessage = {
+  'pt': "*Mensagem automática*:\nVocê foi transferido para o departamento *" + queue?.name + "*\naguarde, já vamos te atender!",
+  'en': "*Automatic message*:\nYou have been transferred to the *" + queue?.name + "* department\nplease wait, we'll assist you soon!",
+  'es': "*Mensaje automático*:\nHas sido transferido al departamento *" + queue?.name + "*\npor favor espera, ¡te atenderemos pronto!"
+}
+
+
+const queueChangedMessage = await wbot.sendMessage(
+  `${ticket.contact.number}@${ticket.isGroup ? "g.us" : "s.whatsapp.net"}`,
+  { text: translatedMessage[language] }
+);
+```
+
+
+### 13.4 Sistema de Avaliação
+Após o encerramento do ticket, o sistema pode solicitar automaticamente uma avaliação do atendimento:
+
+
+```javascript
+if (setting?.value === "enabled") {
+  if (ticketTraking.ratingAt == null) {
+    const ratingTxt = ratingMessage || "";
+    let bodyRatingMessage = `\u200e${ratingTxt}\n\n`;
+    bodyRatingMessage +=
+      "Digite de 1 à 3 para qualificar nosso atendimento:\n*1* - _Insatisfeito_\n*2* - _Satisfeito_\n*3* - _Muito Satisfeito_\n\n";
+    await SendWhatsAppMessage({ body: bodyRatingMessage, ticket });
+   
+    await ticketTraking.update({
+      ratingAt: moment().toDate(),
+      userId: actionUserId
+    });
+  }
+}
+```
+
+
+---
+
+
+## 14. Gestão de Contatos
+
+
+### 14.1 Modelo de Dados de Contatos
+O sistema implementa um modelo de contatos flexível e extensível:
+
+
+```javascript
+// Modelo simplificado
+interface Contact {
+  id: number;
+  name: string;
+  number: string;
+  email: string;
+  profilePicUrl: string;
+  isGroup: boolean;
+  extraInfo: ContactCustomField[];
+  company: Company;
+}
+```
+
+
+### 14.2 Importação e Sincronização
+O NowBot oferece múltiplas formas de importação de contatos:
+
+
+1. **Importação via CSV**: Upload de arquivos CSV com mapeamento de campos
+   ```javascript
+   // Rota de importação
+   router.post("/contacts/upload", isAuth, upload.single("file"), ContactController.importContacts);
+   ```
+
+
+2. **Sincronização com WhatsApp**: Importação dos contatos diretamente da agenda do WhatsApp
+   ```javascript
+   // Serviço de sincronização
+   const syncContacts = async (whatsapp: Whatsapp): Promise<void> => {
+     const wbot = getWbot(whatsapp.id);
+     const phoneContacts = await wbot.getContacts();
+     
+     // Processamento e importação dos contatos
+     for (const contact of phoneContacts) {
+       if (!contact.id.user) continue;
+       
+       const number = contact.id.user;
+       const name = contact.name || contact.shortName || number;
+       
+       await FindOrCreateContactService({ number, name, companyId: whatsapp.companyId });
+     }
+   };
+   ```
+
+
+3. **Criação Manual**: Interface para criação e edição individual de contatos
+
+
+### 14.3 Campos Personalizados
+O sistema permite a criação de campos personalizados para armazenar informações adicionais sobre os contatos:
+
+
+```javascript
+// Estrutura do modelo
+interface ContactCustomField {
+  id: number;
+  name: string;
+  value: string;
+  contactId: number;
+}
+```
+
+
+Estes campos são totalmente configuráveis e podem ser utilizados para:
+- Segmentação de contatos para campanhas
+- Personalização de mensagens automáticas
+- Armazenamento de informações de negócio relevantes
+
+
+---
+
+
+## 15. Integrações com Serviços Externos
+
+
+### 15.1 Arquitetura de Integrações
+O NowBot implementa uma camada de integração flexível que permite conectar serviços externos:
+
+
+```
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  NowBot Core     │────►│  API Gateway    │
+│  (Middleware)    │     │  (Controllers)  │
+│                  │     │                 │
+└──────────────────┘     └────────┬────────┘
+                                  │
+                                  ▼
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  Service Layer   │◄────┤  Adapters       │
+│  (Integrações)   │     │  (Conectores)   │
+│                  │     │                 │
+└──────────────────┘     └────────┬────────┘
+                                  │
+                                  ▼
+                         ┌─────────────────┐
+                         │                 │
+                         │  API Externas   │
+                         │  (OpenAI/etc)   │
+                         │                 │
+                         └─────────────────┘
+```
+
+
+### 15.2 Integração com OpenAI
+O sistema implementa uma integração robusta com a API da OpenAI:
+
+
+1. **Configuração de Modelos**: Possibilidade de escolher entre diferentes modelos GPT
+2. **Context Window**: Manutenção de contexto da conversa para respostas coerentes
+3. **Temperatura e Parâmetros**: Configuração de parâmetros de geração
+4. **Prompts Pré-definidos**: Bibliotecas de prompts para casos de uso comuns
+
+
+```javascript
+// Exemplo simplificado de chamada à API OpenAI
+const response = await openai.createChatCompletion({
+  model: settings.model || "gpt-3.5-turbo",
+  temperature: settings.temperature || 0.7,
+  messages: [
+    { role: "system", content: systemPrompt },
+    ...previousMessages,
+    { role: "user", content: userMessage }
+  ]
+});
+
+
+// Processamento da resposta
+const botMessage = response.data.choices[0].message.content;
+await SendWhatsAppMessage({ body: botMessage, ticket });
+```
+
+
+### 15.3 Integração com Typebot
+O NowBot se integra com o Typebot para criar experiências interativas avançadas:
+
+
+1. **Webhook Bidirecional**: Comunicação em ambas as direções entre NowBot e Typebot
+2. **Passagem de Contexto**: Transferência de informações do contato para personalização
+3. **Fluxos Complexos**: Suporte a árvores de decisão e formulários complexos
+4. **Handoff**: Transferência de e para atendentes humanos
+
+
+```javascript
+// Exemplo de webhook para Typebot
+router.post("/typebot/webhook", TypebotController.webhook);
+
+
+// Processamento de resposta do Typebot
+const processTypebotResponse = async (response, ticket) => {
+  // Processamento das mensagens e ações do Typebot
+  for (const message of response.messages) {
+    if (message.type === "text") {
+      await SendWhatsAppMessage({ body: message.content, ticket });
+    } else if (message.type === "image") {
+      await SendWhatsAppMedia({ mediaUrl: message.content, ticket });
+    }
+    // Outros tipos de mensagem...
+  }
+ 
+  // Processar ações como transferência para humano
+  if (response.action === "transfer") {
+    await UpdateTicketService({
+      ticketId: ticket.id,
+      ticketData: { status: "pending", queueId: response.queueId }
+    });
+  }
+};
+```
+
+
+---
+
+
+## 16. Websockets e Comunicação em Tempo Real
+
+
+### 16.1 Arquitetura de WebSockets
+O NowBot implementa uma robusta camada de comunicação em tempo real:
+
+
+```
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  Cliente React   │◄───►│  Socket.IO      │
+│  (Frontend)      │     │  (Client)       │
+│                  │     │                 │
+└──────────────────┘     └────────┬────────┘
+                                  │
+                                  │
+                                  ▼
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  Express Server  │◄───►│  Socket.IO      │
+│  (Backend)       │     │  (Server)       │
+│                  │     │                 │
+└──────────────────┘     └────────┬────────┘
+                                  │
+                                  │
+                                  ▼
+                         ┌─────────────────┐
+                         │                 │
+                         │  Redis Adapter  │
+                         │  (Scaling)      │
+                         │                 │
+                         └─────────────────┘
+```
+
+
+### 16.2 Implementação no Backend
+O servidor Socket.IO é inicializado e configurado para suportar múltiplas instâncias:
+
+
+```javascript
+import { Server as SocketIO } from "socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
+import Redis from "ioredis";
+
+
+const io = new SocketIO(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL,
+    credentials: true
+  }
+});
+
+
+// Configuração do adaptador Redis para escala horizontal
+if (process.env.REDIS_URI) {
+  const pubClient = new Redis(process.env.REDIS_URI);
+  const subClient = pubClient.duplicate();
+  io.adapter(createAdapter(pubClient, subClient));
+}
+
+
+// Autenticação de socket
+io.use((socket, next) => {
+  const token = socket.handshake.query.token as string;
+  try {
+    const decoded = verify(token, authSecret);
+    socket.handshake.auth = decoded;
+    next();
+  } catch (err) {
+    next(new Error("Authentication error"));
+  }
+});
+```
+
+
+### 16.3 Canais e Eventos
+O sistema implementa diversos canais e eventos para comunicação em tempo real:
+
+
+1. **Canais de Empresa**: `company-${companyId}-*`
+   - Notificações em nível de empresa
+   - Atualizações gerais de configuração
+
+
+2. **Canais de Fila**: `queue-${queueId}-*`
+   - Notificações de tickets específicos de fila
+   - Status de atendentes e estatísticas
+
+
+3. **Canais de Ticket**: `${ticketId}`
+   - Atualizações de mensagens em tempo real
+   - Mudanças de status e atribuições
+
+
+4. **Principais Eventos**:
+   - `ticket`: Atualizações de tickets (novos, atualizados, fechados)
+   - `contact`: Alterações em contatos
+   - `message`: Novas mensagens
+   - `whatsappSession`: Atualizações nas conexões WhatsApp
+
+
+### 16.4 Implementação no Frontend
+No frontend, os sockets são gerenciados através de um contexto React:
+
+
+```javascript
+// Exemplo simplificado do contexto de socket
+const SocketContext = createContext({});
+
+
+const SocketProvider = ({ children }) => {
+  const [socket, setSocket] = useState(null);
+  const { token } = useAuth();
+ 
+  useEffect(() => {
+    if (!token) return;
+   
+    const newSocket = io(process.env.REACT_APP_BACKEND_URL, {
+      query: { token },
+      transports: ["websocket"]
+    });
+   
+    setSocket(newSocket);
+   
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [token]);
+ 
+  // Registra handlers para eventos comuns
+  useEffect(() => {
+    if (!socket) return;
+   
+    socket.on("ticket", handleTicketEvent);
+    socket.on("message", handleMessageEvent);
+   
+    return () => {
+      socket.off("ticket");
+      socket.off("message");
+    };
+  }, [socket]);
+ 
+  return (
+    <SocketContext.Provider value={{ socket }}>
+      {children}
+    </SocketContext.Provider>
+  );
+};
+```
+
+
+---
+
+
+## 17. Processos de Background
+
+
+### 17.1 Arquitetura de Jobs
+O NowBot implementa um sistema robusto de processamento em background:
+
+
+```
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  Dispatcher      │────►│  Redis Queue    │
+│  (Agendador)     │     │  (Bull)         │
+│                  │     │                 │
+└──────────────────┘     └────────┬────────┘
+                                  │
+                                  ▼
+┌──────────────────┐     ┌─────────────────┐
+│                  │     │                 │
+│  Worker          │◄────┤  Processor      │
+│  (Consumidor)    │     │  (Handler)      │
+│                  │     │                 │
+└──────────────────┘     └─────────────────┘
+```
+
+
+### 17.2 Principais Filas Implementadas
+
+
+1. **SendMessages**: Processamento assíncrono de envio de mensagens
+   ```javascript
+   // Definição da fila
+   const SendMessagesQueue = new Queue("SendMessages", {
+     redis: { host: process.env.REDIS_HOST, port: process.env.REDIS_PORT }
+   });
+   
+   // Processador
+   SendMessagesQueue.process(async job => {
+     const { data } = job;
+     const { ticketId, message, contactId, companyId } = data;
+     
+     // Lógica de envio de mensagem...
+     await SendWhatsAppMessage({ ticketId, body: message });
+     
+     return { success: true };
+   });
+   ```
+
+
+2. **WebhookActions**: Processamento de webhooks e integrações
+   ```javascript
+   // Adição de job
+   await WebhookActionsQueue.add(
+     "ProcessWebhook",
+     {
+       webhookId,
+       data: webhookData,
+       ticketId
+     },
+     { attempts: 3, backoff: { type: "exponential", delay: 5000 } }
+   );
+   ```
+
+
+3. **ScheduledMessages**: Agendamento de mensagens para envio futuro
+   ```javascript
+   // Scheduling de campanhas
+   await ScheduledMessagesQueue.add(
+     "SendCampaign",
+     {
+       campaignId,
+       companyId
+     },
+     {
+       delay: scheduledDate - Date.now(),
+       attempts: 3
+     }
+   );
+   ```
+
+
+4. **SyncContacts**: Sincronização periódica de contatos
+   ```javascript
+   // Cron job para sincronização diária
+   SyncContactsQueue.add(
+     "SyncAllContacts",
+     {},
+     {
+       repeat: { cron: "0 0 * * *" }  // Todos os dias à meia-noite
+     }
+   );
+   ```
+
+
+### 17.3 Monitoramento e Recuperação
+O sistema implementa mecanismos robustos para monitoramento e recuperação de falhas:
+
+
+1. **Retentativas Automáticas**: Configuração de política de retentativas para jobs
+   ```javascript
+   // Configuração de retentativas
+   {
+     attempts: 5,
+     backoff: {
+       type: "exponential",
+       delay: 60000  // 1 minuto com aumento exponencial
+     }
+   }
+   ```
+
+
+2. **Logging**: Registro detalhado de execução e falhas
+   ```javascript
+   // Hook de falha
+   Queue.on("failed", (job, err) => {
+     logger.error(`Job ${job.id} failed with error: ${err.message}`);
+     Sentry.captureException(err);
+   });
+   ```
+
+
+3. **Monitoramento**: Interface administrativa para visualização do estado das filas
+   ```javascript
+   // Rota para painel de controle
+   router.use("/admin/queues", isAuth, createBullBoard());
+   ```
+
+
+4. **Limpeza**: Remoção automática de jobs concluídos ou falhos após determinado período
+   ```javascript
+   // Configuração de limpeza
+   Queue.clean(24 * 60 * 60 * 1000, "completed");  // Remove jobs concluídos após 24h
+   ```
+
+
+---
+
+
+## 18. Estratégia de Testes
+
+
+### 18.1 Estrutura de Testes
+- **Frontend**: Testes de componentes React utilizando Jest e React Testing Library
+- **Backend**: Testes de API e integração utilizando Jest e Supertest
+- **Cobertura**: Foco em componentes críticos, fluxos de usuário, verificações de segurança e validações
+
+
+### 18.2 Testes de Frontend
+- **Configuração do Jest**: Configurado no arquivo `frontend/jest.config.js`
+- **Estrutura de Diretórios**: Arquivos de teste ficam junto aos componentes com extensão `.test.js` ou `.spec.js`
+- **Mocks**: Utiliza `jest.mock()` para simular serviços externos, API e WebSockets
+
+
+### 18.3 Cobertura de Testes
+Os testes abrangem prioritariamente:
+- Componentes críticos do sistema (autenticação, envio de mensagens)
+- Fluxos de usuário principais
+- Verificações de segurança
+- Validações de entrada de dados
+
+
+### 18.4 Testes de Componentes
+Exemplo de teste para o componente ContactModal:
+
+
+```javascript
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import ContactModal from './ContactModal';
+
+
+describe('ContactModal Component', () => {
+  test('deve renderizar corretamente', () => {
+    render(<ContactModal open={true} onClose={() => {}} />);
+    expect(screen.getByText('Adicionar Contato')).toBeInTheDocument();
+  });
+
+
+  test('deve validar campos obrigatórios', () => {
+    render(<ContactModal open={true} onClose={() => {}} />);
+    fireEvent.click(screen.getByText('Salvar'));
+    expect(screen.getByText('Nome é obrigatório')).toBeInTheDocument();
+    expect(screen.getByText('Número é obrigatório')).toBeInTheDocument();
+  });
+});
+```
+
+
+### 18.5 Testes de API
+Exemplo de teste para listar e criar contatos:
+
+
+```javascript
+import request from 'supertest';
+import app from '../app';
+import { createUserWithToken } from './helpers';
+
+
+describe('API de Contatos', () => {
+  let token;
+ 
+  beforeAll(async () => {
+    token = await createUserWithToken();
+  });
+
+
+  test('GET /contacts deve listar contatos', async () => {
+    const response = await request(app)
+      .get('/contacts')
+      .set('Authorization', `Bearer ${token}`);
+   
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body)).toBe(true);
+  });
+
+
+  test('POST /contacts deve criar um contato', async () => {
+    const response = await request(app)
+      .post('/contacts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        name: 'Contato Teste',
+        number: '5511999998888',
+        email: 'teste@exemplo.com'
+      });
+   
+    expect(response.status).toBe(201);
+    expect(response.body).toHaveProperty('id');
+    expect(response.body.name).toBe('Contato Teste');
+  });
+});
+```
+
+
+---
+
+
+## 19. Padrões de Código e Convenções
+
+
+### 19.1 Estilo de Código
+- Utiliza ESLint e Prettier para formatação consistente
+- Baseado no Airbnb JavaScript Style Guide
+- Configuração em `.eslintrc.js` e `.prettierrc`
+
+
+### 19.2 Nomenclatura
+- **Componentes React**: PascalCase (ex: `ContactList.jsx`)
+- **Arquivos de funções/utilitários**: camelCase (ex: `formatDate.js`)
+- **Funções**: camelCase (ex: `getTicketById()`)
+- **Variáveis**: camelCase (ex: `activeUser`)
+- **Constantes**: UPPER_SNAKE_CASE (ex: `MAX_RETRY_ATTEMPTS`)
+- **Tabelas de Banco**: snake_case (ex: `whatsapp_messages`)
+- **Colunas de Banco**: snake_case (ex: `created_at`)
+
+
+### 19.3 Estrutura de Componentes React
+```jsx
+// Estrutura padrão para componentes funcionais
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+
+
+// Imports locais
+import { useStyles } from './styles';
+import { fetchData } from '../../services/api';
+
+
+const ComponentName = ({ prop1, prop2 }) => {
+  // Hooks
+  const [data, setData] = useState([]);
+  const classes = useStyles();
+ 
+  // Side effects
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const result = await fetchData();
+        setData(result);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+   
+    loadData();
+  }, []);
+ 
+  // Handlers
+  const handleAction = () => {
+    // Implementation
+  };
+ 
+  // Renderização
+  return (
+    <div className={classes.container}>
+      {/* JSX */}
+    </div>
+  );
+};
+
+
+ComponentName.propTypes = {
+  prop1: PropTypes.string.isRequired,
+  prop2: PropTypes.number,
+};
+
+
+ComponentName.defaultProps = {
+  prop2: 0,
+};
+
+
+export default ComponentName;
+```
+
+
+### 19.4 Estrutura de Controladores
+```javascript
+// Estrutura padrão para controladores
+const yup = require('yup');
+const ModelName = require('../models/ModelName');
+
+
+// Schema de validação
+const schema = yup.object().shape({
+  name: yup.string().required(),
+  email: yup.string().email().required(),
+});
+
+
+exports.list = async (req, res) => {
+  try {
+    const items = await ModelName.findAll({
+      where: req.query
+    });
+   
+    return res.json(items);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+
+
+exports.create = async (req, res) => {
+  try {
+    // Validação
+    await schema.validate(req.body);
+   
+    const item = await ModelName.create(req.body);
+    return res.status(201).json(item);
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      return res.status(400).json({ error: err.message });
+    }
+   
+    console.error(err);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+};
+```
+
+
+---
+
+
+## 20. Problemas Conhecidos e Soluções
+
+
+### 20.1 Problemas de Conexão WhatsApp
+| Problema | Solução |
+|----------|---------|
+| Desconexões frequentes | 1. Verificar a estabilidade da conexão de internet<br>2. Aumentar o valor de `MAX_RETRY_ATTEMPTS` no arquivo `.env`<br>3. Implementar reconexão automática usando o evento `disconnected` |
+| Falha ao obter QR Code | 1. Reiniciar o serviço usando `pm2 restart all`<br>2. Limpar a pasta `backend/dist/public/qrcodes`<br>3. Verificar logs para possíveis erros específicos |
+| Mensagens não entregues | 1. Verificar o status da sessão do WhatsApp<br>2. Implementar fila de retry para mensagens falhas<br>3. Verificar limites de API do WhatsApp |
+
+
+### 20.2 Problemas de Performance
+| Problema | Solução |
+|----------|---------|
+| Tempos de carregamento lentos | 1. Implementar paginação para grandes conjuntos de dados<br>2. Otimizar consultas SQL com índices apropriados<br>3. Implementar cache com Redis para dados frequentemente acessados |
+| Consumo alto de memória | 1. Implementar limpeza de sessões inativas<br>2. Otimizar anexos de imagem e mídia<br>3. Utilizar streams para processamento de grandes arquivos |
+| CPU sobrecarregada | 1. Mover processamento intensivo para workers separados<br>2. Implementar throttling para operações pesadas<br>3. Considerar escalar horizontalmente com mais instâncias |
+
+
+### 20.3 Problemas de Integração
+| Problema | Solução |
+|----------|---------|
+| Contatos importados não aparecem | 1. Verificar a formatação correta dos números (E.164)<br>2. Verificar permissões de acesso à API de contatos<br>3. Garantir que o contato existe no WhatsApp |
+| Falhas em APIs externas | 1. Implementar circuit breaker para evitar chamadas repetidas a APIs com falha<br>2. Configurar timeouts apropriados<br>3. Implementar backup local para dados críticos |
+
+
+---
+
+
+## 21. Configurações Avançadas
+
+
+### 21.1 Escalabilidade Horizontal
+Para executar múltiplas instâncias do backend:
+
+
+1. Configure um balanceador de carga (Nginx):
+```nginx
+upstream nowbot_backend {
+    server 127.0.0.1:4000;
+    server 127.0.0.1:4001;
+    server 127.0.0.1:4002;
+}
+
+
+server {
+    listen 80;
+    server_name api.nowbot.com.br;
+
+
+    location / {
+        proxy_pass http://nowbot_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+
+2. Configure o Redis para compartilhar sessões entre instâncias:
+```javascript
+// backend/src/libs/socket.js
+const socket = io({
+  adapter: createAdapter(redisClient)
+});
+```
+
+
+### 21.2 Otimização de Banco de Dados
+1. Índices recomendados:
+```sql
+-- Índice para pesquisa de tickets
+CREATE INDEX idx_tickets_status ON tickets(status);
+CREATE INDEX idx_tickets_userId ON tickets(userId);
+CREATE INDEX idx_tickets_contactId ON tickets(contactId);
+
+
+-- Índice para mensagens
+CREATE INDEX idx_messages_ticketId ON messages(ticketId);
+CREATE INDEX idx_messages_contactId ON messages(contactId);
+```
+
+
+2. Particionamento de tabelas para dados históricos:
+```sql
+-- Exemplo para particionamento de mensagens por mês
+CREATE TABLE messages_partitioned (
+    id SERIAL PRIMARY KEY,
+    body TEXT,
+    ticketId INTEGER,
+    contactId INTEGER,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+) PARTITION BY RANGE (created_at);
+
+
+CREATE TABLE messages_y2023m01 PARTITION OF messages_partitioned
+    FOR VALUES FROM ('2023-01-01') TO ('2023-02-01');
+   
+CREATE TABLE messages_y2023m02 PARTITION OF messages_partitioned
+    FOR VALUES FROM ('2023-02-01') TO ('2023-03-01');
+```
+
+
+
+
